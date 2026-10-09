@@ -1,7 +1,9 @@
 {
+    "id": "/PokerTrainer/",
     "name": "Poker Trainer",
     "short_name": "poker_trainer",
-    "start_url": ".",
+    "start_url": "/PokerTrainer/",
+    "scope": "/PokerTrainer/",
     "display": "standalone",
     "background_color": "#1A1A24",
     "theme_color": "#3F51B5",
