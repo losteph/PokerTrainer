@@ -80,7 +80,9 @@ class StrategicRanges {
 
   // BB:
   // tutte le coppie + tutti gli assi + tutti i suited.
-  static const List<String> bigBlind = [];
+  static const List<String> bigBlind = [
+    ...smallBlind,
+  ];
 
   // ============================================================
   // 3 GIOCATORI

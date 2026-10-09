@@ -201,7 +201,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   _buildRangeSection('Small Blind (SB)', StrategicRanges.smallBlind),
                   _buildRangeSection(
                     'Big Blind (BB)',
-                    const ['Tutte le coppie (22+)', 'Tutti gli Assi (Ax)', 'Tutte le suited (qualsiasi carta con lo stesso seme, es. 32s, T4s...)'],
+                    const ['Come SB + Tutte le coppie', 'Tutti gli Assi', 'Tutte i suited (carte dello stesso seme)'],
                   ),
 
                   const SizedBox(height: 20),
