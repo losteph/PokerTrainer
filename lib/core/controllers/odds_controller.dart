@@ -228,7 +228,9 @@ class OddsController extends ChangeNotifier {
     if (index != -1) {
       return deck.removeAt(index);
     }
-    return deck.removeLast();
+    throw StateError(
+      'Impossibile generare lo scenario: nessuna carta soddisfa il criterio richiesto.',
+    );
   }
 
   (List<Card>, List<Card>) _buildFlushDraw(int boardCount) {
@@ -391,7 +393,13 @@ class OddsController extends ChangeNotifier {
 
   (List<Card>, List<Card>) _buildSetDominant(int boardCount) {
     final deck = _createNewDeck();
-    final setRank = CardRank.values[4 + _random.nextInt(6)];
+    // Evita l'8: il board contiene già un 8 e il generatore deve poterlo
+    // pescare come carta distinta dal pocket set.
+    final setRanks = CardRank.values
+        .where((rank) =>
+            rank.index >= 4 && rank.index <= 9 && rank != CardRank.eight)
+        .toList();
+    final setRank = setRanks[_random.nextInt(setRanks.length)];
 
     final hole = [
       _takeCard(deck, (c) => c.rank == setRank),

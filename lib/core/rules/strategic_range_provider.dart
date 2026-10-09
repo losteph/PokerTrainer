@@ -124,10 +124,8 @@ class StrategicRangeProvider {
         );
 
       case PlayerPosition.bb:
-        return const StrategicRangeDefinition(
-          allPairs: true,
-          allAces: true,
-          allSuited: true,
+        return StrategicRangeDefinition(
+          notations: StrategicRanges.bigBlind,
         );
     }
   }
@@ -230,8 +228,8 @@ class StrategicRangeProvider {
       PlayerPosition.bb,
     },
     6: {
-      PlayerPosition.mp,
       PlayerPosition.lj,
+      PlayerPosition.hj,
       PlayerPosition.co,
       PlayerPosition.btn,
       PlayerPosition.sb,

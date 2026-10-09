@@ -8,16 +8,6 @@ import '../core/models/player_position_scheme.dart';
 import '../core/rules/strategic_ranges.dart';
 import '../widgets/training_action_bar.dart';
 
-enum RangeCategory {
-  early('Early (UTG)'),
-  middle('Middle (MP/LJ/HJ)'),
-  late('Late (CO/BTN)'),
-  blinds('Blinds (SB/BB)');
-
-  final String label;
-  const RangeCategory(this.label);
-}
-
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
 
@@ -30,7 +20,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
   final Random _random = Random();
 
   int? _selectedPlayerCount; // null = Casuale (2-10)
-  RangeCategory? _selectedRange; // null = Casuale
+  PlayerPosition? _selectedPosition; // null = Casuale
 
   @override
   void initState() {
@@ -39,52 +29,25 @@ class _TrainingScreenState extends State<TrainingScreen> {
     _dealNextHand();
   }
 
-  // Restituisce le posizioni valide a tavolo per un dato player count
+  // Posizioni effettive a tavolo per numero di giocatori
   List<PlayerPosition> _getTablePositions(int playerCount) {
     if (playerCount == 2) return const [PlayerPosition.sb, PlayerPosition.bb];
     if (playerCount == 3) return const [PlayerPosition.btn, PlayerPosition.sb, PlayerPosition.bb];
     return PlayerPositionScheme.getForPlayerCount(playerCount);
   }
 
-  // Mappa quali posizioni appartengono a quale categoria
-  List<PlayerPosition> _positionsForCategory(RangeCategory cat) {
-    return switch (cat) {
-      RangeCategory.early => const [PlayerPosition.utg, PlayerPosition.utg1, PlayerPosition.utg2],
-      RangeCategory.middle => const [PlayerPosition.mp, PlayerPosition.lj, PlayerPosition.hj],
-      RangeCategory.late => const [PlayerPosition.co, PlayerPosition.btn],
-      RangeCategory.blinds => const [PlayerPosition.sb, PlayerPosition.bb],
-    };
-  }
-
-  // Range disponibili dato un numero di giocatori specifico
-  Set<RangeCategory> _getAvailableRanges(int? playerCount) {
-    if (playerCount == null) {
-      return RangeCategory.values.toSet();
-    }
-    final tablePositions = _getTablePositions(playerCount).toSet();
-    final available = <RangeCategory>{};
-
-    for (final cat in RangeCategory.values) {
-      final catPositions = _positionsForCategory(cat);
-      if (catPositions.any((pos) => tablePositions.contains(pos))) {
-        available.add(cat);
-      }
-    }
-    return available;
-  }
-
   void _dealNextHand() {
     int playerCount;
-    RangeCategory category;
+    PlayerPosition position;
 
     // 1. Risolvi il numero di giocatori
     if (_selectedPlayerCount != null) {
       playerCount = _selectedPlayerCount!;
-    } else if (_selectedRange != null) {
-      // Se abbiamo un range scelto ma player count casuale, scegliamo un tavolo compatibile
+    } else if (_selectedPosition != null) {
+      // Tavolo casuale ma compatibile con la posizione scelta
       final compatibleCounts = <int>[];
       for (int count = 2; count <= 10; count++) {
-        if (_getAvailableRanges(count).contains(_selectedRange)) {
+        if (_getTablePositions(count).contains(_selectedPosition)) {
           compatibleCounts.add(count);
         }
       }
@@ -93,21 +56,13 @@ class _TrainingScreenState extends State<TrainingScreen> {
       playerCount = 2 + _random.nextInt(9);
     }
 
-    // 2. Risolvi la categoria del range
-    final availableRangesAtTable = _getAvailableRanges(playerCount).toList();
-    if (_selectedRange != null && availableRangesAtTable.contains(_selectedRange)) {
-      category = _selectedRange!;
+    // 2. Risolvi la posizione
+    final availablePositions = _getTablePositions(playerCount);
+    if (_selectedPosition != null && availablePositions.contains(_selectedPosition)) {
+      position = _selectedPosition!;
     } else {
-      category = availableRangesAtTable[_random.nextInt(availableRangesAtTable.length)];
+      position = availablePositions[_random.nextInt(availablePositions.length)];
     }
-
-    // 3. Estrai una posizione casuale valida per quella categoria a quel tavolo
-    final tablePositions = _getTablePositions(playerCount);
-    final validPositions = _positionsForCategory(category)
-        .where((pos) => tablePositions.contains(pos))
-        .toList();
-
-    final position = validPositions[_random.nextInt(validPositions.length)];
 
     controller.configureTable(
       playerCount: playerCount,
@@ -166,7 +121,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // SPIEGAZIONE RANGE DINAMICI
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -184,7 +138,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // FASCIA 1: TAVOLI 10-4 GIOCATORI
                   const Text(
                     '1. Tavoli da 10 a 4 Giocatori',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
@@ -201,12 +154,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   _buildRangeSection('Small Blind (SB)', StrategicRanges.smallBlind),
                   _buildRangeSection(
                     'Big Blind (BB)',
-                    const ['Come SB + Tutte le coppie', 'Tutti gli Assi', 'Tutte i suited (carte dello stesso seme)'],
+                    const ['Come SB + Tutte le coppie', 'Tutti gli Assi', 'Tutte le suited (carte dello stesso seme)'],
                   ),
 
                   const SizedBox(height: 20),
 
-                  // FASCIA 2: 3 GIOCATORI
                   const Text(
                     '2. Tavolo a 3 Giocatori',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
@@ -218,7 +170,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
                   const SizedBox(height: 20),
 
-                  // FASCIA 3: 2 GIOCATORI (HEADS-UP)
                   const Text(
                     '3. Heads-Up (2 Giocatori)',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
@@ -271,7 +222,14 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final availableRanges = _getAvailableRanges(_selectedPlayerCount);
+    // Calcola le opzioni ammesse senza duplicati o valori null non validi
+    final List<PlayerPosition> allowedPositions = _selectedPlayerCount != null
+        ? _getTablePositions(_selectedPlayerCount!)
+        : PlayerPosition.values;
+
+    // Se la posizione selezionata non è più tra quelle permesse, resettala in sicurezza
+    final effectiveSelectedPosition =
+        allowedPositions.contains(_selectedPosition) ? _selectedPosition : null;
 
     return AnimatedBuilder(
       animation: controller,
@@ -315,9 +273,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           onChanged: (count) {
                             setState(() {
                               _selectedPlayerCount = count;
-                              // Se il range precedentemente scelto non esiste con questi giocatori, resettalo
-                              if (_selectedRange != null && !_getAvailableRanges(count).contains(_selectedRange)) {
-                                _selectedRange = null;
+                              if (count != null && _selectedPosition != null) {
+                                if (!_getTablePositions(count).contains(_selectedPosition)) {
+                                  _selectedPosition = null; // Resetta se non valida
+                                }
                               }
                             });
                             _dealNextHand();
@@ -326,38 +285,28 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       ),
                       const SizedBox(width: 8),
 
-                      // SELETTORE 2: RANGE (Abilitato/disabilitato dinamicamente)
+                      // SELETTORE 2: RUOLO PRECISO (Niente crash, mostra solo ruoli validi)
                       Expanded(
-                        child: DropdownButtonFormField<RangeCategory?>(
-                          initialValue: _selectedRange,
+                        child: DropdownButtonFormField<PlayerPosition?>(
+                          initialValue: effectiveSelectedPosition,
                           isExpanded: true,
                           decoration: InputDecoration(
-                            labelText: 'Range',
+                            labelText: 'Ruolo',
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           items: [
                             const DropdownMenuItem(value: null, child: Text('Casuale')),
-                            ...RangeCategory.values.map(
-                              (cat) {
-                                final isAvailable = availableRanges.contains(cat);
-                                return DropdownMenuItem(
-                                  value: isAvailable ? cat : null,
-                                  enabled: isAvailable,
-                                  child: Text(
-                                    cat.label,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: isAvailable ? null : Colors.grey.shade400,
-                                    ),
-                                  ),
-                                );
-                              },
+                            ...allowedPositions.map(
+                              (pos) => DropdownMenuItem<PlayerPosition?>(
+                                value: pos,
+                                child: Text(pos.label),
+                              ),
                             ),
                           ],
-                          onChanged: (cat) {
+                          onChanged: (pos) {
                             setState(() {
-                              _selectedRange = cat;
+                              _selectedPosition = pos;
                             });
                             _dealNextHand();
                           },
@@ -385,7 +334,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
                   const Spacer(),
 
-                  // Carte coperte/servite
+                  // Carte servite
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: controller.holeCards.map((card) {

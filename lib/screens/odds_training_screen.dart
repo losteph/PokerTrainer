@@ -120,18 +120,18 @@ class _OddsTrainingScreenState extends State<OddsTrainingScreen> {
                           const SizedBox(height: 6),
                           const Text(
                             '• Pot / 10 → 9%\n'
-                            '• Pot / 5 → 14%\n'
-                            '• Pot / 4 → 17%\n'
-                            '• Pot / 3 → 20%\n'
-                            '• Pot / 2 → 25%\n'
-                            '• 2/3 Pot → 29%\n'
-                            '• 3/4 Pot → 30%\n'
-                            '• Pot Pieno → 39%\n'
-                            '• 2x Pot → 40%\n'
-                            '• 3x Pot → 43%\n'
-                            '• 4x Pot → 45%\n'
-                            '• 5x Pot → 49%\n'
-                            '• All-in → 51%',
+                            '• Pot / 5  → 14%\n'
+                            '• Pot / 4  → 17%\n'
+                            '• Pot / 3  → 20%\n'
+                            '• Pot / 2  → 25%\n'
+                            '• 2/3 Pot  → 29%\n'
+                            '• 3/4 Pot  → 30%\n'
+                            '• 1x Pot   → 39%\n'
+                            '• 2x Pot   → 40%\n'
+                            '• 3x Pot   → 43%\n'
+                            '• 4x Pot   → 45%\n'
+                            '• 5x Pot   → 49%\n'
+                            '• All-in   → 51%',
                             style: TextStyle(height: 1.35),
                           ),
                           const SizedBox(height: 8),

@@ -73,13 +73,16 @@ class OutsEvaluator {
     // CASO 3: Progetti di Scala, Colore e Combo
     final remainingDeck = _getRemainingDeck(allKnown);
     final rawOuts = <Card>{};
+    final alreadyHasFlush = _hasFlush(allKnown);
+    final alreadyHasStraight = _hasStraight(allKnown);
     bool makesFlush = false;
     bool makesStraight = false;
 
+    // Un out deve completare una combinazione che non era già presente.
     for (final candidate in remainingDeck) {
       final testCards = [...allKnown, candidate];
-      final flush = _hasFlush(testCards);
-      final straight = _hasStraight(testCards);
+      final flush = !alreadyHasFlush && _hasFlush(testCards);
+      final straight = !alreadyHasStraight && _hasStraight(testCards);
 
       if (flush || straight) {
         rawOuts.add(candidate);
@@ -88,13 +91,15 @@ class OutsEvaluator {
       }
     }
 
-    // FILTRO OUTS SPORCHI: Se cerchiamo scala ma a terra ci sono 2 o 3 carte a colore
+    // Classifica ogni carta individualmente: non usare un unico flag globale
+    // makesFlush per decidere se tutti gli outs di un seme siano puliti.
     final cleanOuts = <Card>{};
     final dirtyOuts = <Card>{};
-    final flushThreatSuit = _getBoardFlushThreatSuit(board);
 
     for (final out in rawOuts) {
-      if (!makesFlush && flushThreatSuit != null && out.suit == flushThreatSuit) {
+      final completesOurFlush =
+          !alreadyHasFlush && _hasFlush([...allKnown, out]);
+      if (!completesOurFlush && _isFlushThreatSuit(board, out.suit)) {
         dirtyOuts.add(out);
       } else {
         cleanOuts.add(out);
@@ -199,7 +204,7 @@ class OutsEvaluator {
       // 3. Carte che accoppiano le altre del board
       for (final otherRank in boardOtherRanks) {
         final pairCard = Card(suit: suit, rank: otherRank);
-        if (!board.contains(pairCard)) {
+        if (!hole.contains(pairCard) && !board.contains(pairCard)) {
           if (otherRank.index > tripsRank.index) {
             dirty.add(pairCard); // Rischio overfull per l'avversario
           } else {
@@ -243,13 +248,8 @@ class OutsEvaluator {
     return outs;
   }
 
-  static CardSuit? _getBoardFlushThreatSuit(List<Card> board) {
-    final counts = <CardSuit, int>{};
-    for (final b in board) {
-      counts[b.suit] = (counts[b.suit] ?? 0) + 1;
-      if (counts[b.suit]! >= 2) return b.suit;
-    }
-    return null;
+  static bool _isFlushThreatSuit(List<Card> board, CardSuit suit) {
+    return board.where((card) => card.suit == suit).length >= 2;
   }
 
   static List<Card> _getRemainingDeck(List<Card> known) {

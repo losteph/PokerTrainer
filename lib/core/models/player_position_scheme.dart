@@ -65,7 +65,7 @@ class PlayerPositionScheme {
 
       case 6:
         return const [
-          PlayerPosition.mp, // o lj
+          PlayerPosition.lj,
           PlayerPosition.hj,
           PlayerPosition.co,
           PlayerPosition.btn,
