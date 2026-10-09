@@ -82,6 +82,14 @@ class StrategicRanges {
   // tutte le coppie + tutti gli assi + tutti i suited.
   static const List<String> bigBlind = [
     ...smallBlind,
+    '23s+',
+    '24s+',
+    '25s+',
+    '26s+',
+    '27s+',
+    '28s+',
+    '29s+',
+    '2Ts+',
   ];
 
   // ============================================================
