@@ -214,8 +214,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   const SizedBox(height: 8),
                   _buildRangeSection('Button (BTN)', StrategicRanges.threePlayerButton),
                   _buildRangeSection('Small Blind (SB)', StrategicRanges.threePlayerSmallBlind),
-                  _buildRangeSection('Big Blind (BB) - Call', StrategicRanges.threePlayerBigBlindCall),
-                  _buildRangeSection('Big Blind (BB) - Raise', StrategicRanges.threePlayerBigBlindRaise),
+                  _buildRangeSection('Big Blind (BB)', StrategicRanges.threePlayerBigBlindRaise),
 
                   const SizedBox(height: 20),
 

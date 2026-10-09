@@ -30,8 +30,7 @@ class StrategicRanges {
     '55+',
     'A2s+',
     'ATo+',
-    'KQs+',
-    'KJs',
+    'KJs+',
     'QJs',
     '98s',
     '87s',
@@ -125,7 +124,7 @@ class StrategicRanges {
   ];
 
   static const List<String> threePlayerBigBlindRaise = [
-    '99+',
+    '22+',
     'A2s+',
     'A5o+',
     'K7s+',
