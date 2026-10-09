@@ -405,13 +405,29 @@ class OddsController extends ChangeNotifier {
       _takeCard(deck, (c) => c.rank == setRank),
       _takeCard(deck, (c) => c.rank == setRank),
     ];
-    final board = [
+    final board = <Card>[
       _takeCard(deck, (c) => c.rank == setRank),
-      _takeCard(deck, (c) => c.rank == CardRank.two && c.rank != setRank),
-      _takeCard(deck, (c) => c.rank == CardRank.eight && c.rank != setRank),
     ];
+
+    // Mantiene il board asciutto: nessun seme deve comparire tre volte.
+    // Senza questo vincolo, una scelta casuale poteva trasformare il set
+    // dominante in uno scenario su board bagnato.
+    bool suitCanBeAdded(Card card) =>
+        board.where((existing) => existing.suit == card.suit).length < 2;
+
+    board.add(_takeCard(
+      deck,
+      (c) => c.rank == CardRank.two && c.rank != setRank && suitCanBeAdded(c),
+    ));
+    board.add(_takeCard(
+      deck,
+      (c) => c.rank == CardRank.eight && c.rank != setRank && suitCanBeAdded(c),
+    ));
     if (boardCount == 4) {
-      board.add(_takeCard(deck, (c) => c.rank == CardRank.king && c.rank != setRank));
+      board.add(_takeCard(
+        deck,
+        (c) => c.rank == CardRank.king && c.rank != setRank && suitCanBeAdded(c),
+      ));
     }
     return (hole, board);
   }
