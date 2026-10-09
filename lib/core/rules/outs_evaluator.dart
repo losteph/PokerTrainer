@@ -23,6 +23,27 @@ class OutsEvaluator {
   }) {
     final allKnown = [...hole, ...board];
 
+    // 0. VERIFICA PUNTI ASSOLUTI GIÀ CHIUSI (Poker o Full)
+    if (_hasFourOfAKind(hole, board)) {
+      return const HandOutsAnalysis(
+        totalOuts: 0,
+        cleanOuts: {},
+        dirtyOuts: {},
+        description: 'Poker Servito (Mano Imbattibile - Made Hand)',
+        isDominantMadeHand: true,
+      );
+    }
+
+    if (_hasFullHouse(hole, board)) {
+      return const HandOutsAnalysis(
+        totalOuts: 0,
+        cleanOuts: {},
+        dirtyOuts: {},
+        description: 'Full Servito (Mano Dominante - Made Hand)',
+        isDominantMadeHand: true,
+      );
+    }
+
     // CASO 1: Set da Pocket Pair (es. 7-7 in mano con un 7 a terra)
     if (_isPocketSet(hole, board)) {
       if (_isWetBoard(board)) {
@@ -116,6 +137,27 @@ class OutsEvaluator {
   }
 
   // --- LOGICHE MATEMATICHE ---
+
+  static bool _hasFourOfAKind(List<Card> hole, List<Card> board) {
+    final all = [...hole, ...board];
+    final counts = <CardRank, int>{};
+    for (final c in all) {
+      counts[c.rank] = (counts[c.rank] ?? 0) + 1;
+      if (counts[c.rank]! >= 4) return true;
+    }
+    return false;
+  }
+
+  static bool _hasFullHouse(List<Card> hole, List<Card> board) {
+    final all = [...hole, ...board];
+    final counts = <CardRank, int>{};
+    for (final c in all) {
+      counts[c.rank] = (counts[c.rank] ?? 0) + 1;
+    }
+    final hasThree = counts.values.any((v) => v >= 3);
+    final pairs = counts.values.where((v) => v >= 2).length;
+    return hasThree && pairs >= 2;
+  }
 
   static bool _isPocketSet(List<Card> hole, List<Card> board) {
     if (hole[0].rank != hole[1].rank) return false;

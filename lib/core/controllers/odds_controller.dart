@@ -52,9 +52,9 @@ class OddsController extends ChangeNotifier {
     if (scenario.isDominantMadeHand) {
       explanation =
           'Punto Chiuso: ${scenario.drawDescription}\n'
-          'Board Asciutto (Dry): Stai dominando il tavolo (~85%+ di equity).\n'
+          'Stai dominando il tavolo (~85%+ di equity reale).\n'
           'Tuo Stack: \$${scenario.userStack.toInt()} | Piatto: \$${scenario.pot.toInt()} | Bet: \$${scenario.callAmount.toInt()}\n\n'
-          'Verdetto: CALL (o Raise) per valore! Con un set su board asciutto non si folda mai.';
+          'Verdetto: CALL (o Raise) per valore! Con una mano fatta dominante non si folda mai.';
     } else if (scenario.outs == 0) {
       explanation =
           'Mano Spazzatura: Nessun progetto né carta viva (0 outs).\n\n'
@@ -94,6 +94,7 @@ class OddsController extends ChangeNotifier {
     List<Card> hole;
     List<Card> board;
 
+    // Ogni scenario parte da un mazzo completo di 52 carte uniche
     if (roll < 12) {
       final gen = _buildTrashHand(boardCount);
       hole = gen.$1;
@@ -136,10 +137,10 @@ class OddsController extends ChangeNotifier {
       board = gen.$2;
     }
 
-    // ANALISI MATEMATICA DETERMINISTICA DEGLI OUTS
+    // ANALISI DEGLI OUTS
     final analysis = OutsEvaluator.evaluate(hole: hole, board: board);
 
-    // --- PARAMETRI ECONOMICI CASALINGHI (Bankroll 2000$) ---
+    // PARAMETRI ECONOMICI CASALINGHI (Tavolo 4-10, Bankroll 2000$)
     final playerCount = 4 + _random.nextInt(7);
     final double startingStack = switch (playerCount) {
       >= 9 => 200.0,
@@ -175,7 +176,6 @@ class OddsController extends ChangeNotifier {
       if (finalCall < 2.0) finalCall = 2.0;
     }
 
-    // Ricalcolo del rapporto reale rispetto al piatto per eliminare discrepanze
     final BetSizeCategory actualBet;
     if (finalCall >= userStack || targetBetCategory == BetSizeCategory.allIn) {
       actualBet = BetSizeCategory.allIn;
@@ -208,164 +208,219 @@ class OddsController extends ChangeNotifier {
     return (amount / 20).round() * 20.0;
   }
 
-  // --- GENERATORI DI SCENARI CON SEMI E RANK CASUALI ---
+  // =========================================================================
+  // GESTORE MAZZO REALE: IMPOSSIBILE AVERE CARTE DUPLICATE
+  // =========================================================================
 
-  CardSuit _pickRandomSuit() => CardSuit.values[_random.nextInt(CardSuit.values.length)];
+  List<Card> _createNewDeck() {
+    final deck = <Card>[];
+    for (final s in CardSuit.values) {
+      for (final r in CardRank.values) {
+        deck.add(Card(suit: s, rank: r));
+      }
+    }
+    deck.shuffle(_random);
+    return deck;
+  }
+
+  Card _takeCard(List<Card> deck, bool Function(Card) predicate) {
+    final index = deck.indexWhere(predicate);
+    if (index != -1) {
+      return deck.removeAt(index);
+    }
+    return deck.removeLast();
+  }
 
   (List<Card>, List<Card>) _buildFlushDraw(int boardCount) {
-    final flushSuit = _pickRandomSuit();
-    final otherSuits = CardSuit.values.where((s) => s != flushSuit).toList();
-    final allRanks = List<CardRank>.from(CardRank.values)..shuffle(_random);
-    final hole = [Card(suit: flushSuit, rank: allRanks[0]), Card(suit: flushSuit, rank: allRanks[1])];
+    final deck = _createNewDeck();
+    final flushSuit = CardSuit.values[_random.nextInt(CardSuit.values.length)];
+
+    final hole = [
+      _takeCard(deck, (c) => c.suit == flushSuit),
+      _takeCard(deck, (c) => c.suit == flushSuit),
+    ];
     final board = [
-      Card(suit: flushSuit, rank: allRanks[2]),
-      Card(suit: flushSuit, rank: allRanks[3]),
-      Card(suit: otherSuits[_random.nextInt(otherSuits.length)], rank: allRanks[4]),
+      _takeCard(deck, (c) => c.suit == flushSuit),
+      _takeCard(deck, (c) => c.suit == flushSuit),
+      _takeCard(deck, (c) => c.suit != flushSuit),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: otherSuits[_random.nextInt(otherSuits.length)], rank: allRanks[5]));
+      board.add(_takeCard(deck, (c) => c.suit != flushSuit));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildOesd(int boardCount) {
-    final baseIndex = 2 + _random.nextInt(6);
-    final suits = List<CardSuit>.from(CardSuit.values)..shuffle(_random);
-    final hole = [Card(suit: suits[0], rank: CardRank.values[baseIndex + 1]), Card(suit: suits[1], rank: CardRank.values[baseIndex + 2])];
+    final deck = _createNewDeck();
+    final base = 2 + _random.nextInt(6); // es. 5,6,7,8
+
+    final hole = [
+      _takeCard(deck, (c) => c.rank == CardRank.values[base + 1]),
+      _takeCard(deck, (c) => c.rank == CardRank.values[base + 2]),
+    ];
     final board = [
-      Card(suit: suits[2], rank: CardRank.values[baseIndex]),
-      Card(suit: suits[3], rank: CardRank.values[baseIndex + 3]),
-      Card(suit: suits[0], rank: CardRank.two),
+      _takeCard(deck, (c) => c.rank == CardRank.values[base]),
+      _takeCard(deck, (c) => c.rank == CardRank.values[base + 3]),
+      _takeCard(deck, (c) => c.rank == CardRank.two && c.rank != CardRank.values[base]),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: suits[1], rank: CardRank.ace));
+      board.add(_takeCard(deck, (c) => c.rank == CardRank.ace));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildGutshot(int boardCount) {
-    final baseIndex = 3 + _random.nextInt(5);
-    final suits = List<CardSuit>.from(CardSuit.values)..shuffle(_random);
-    final hole = [Card(suit: suits[0], rank: CardRank.values[baseIndex]), Card(suit: suits[1], rank: CardRank.values[baseIndex + 1])];
+    final deck = _createNewDeck();
+    final base = 3 + _random.nextInt(5);
+
+    final hole = [
+      _takeCard(deck, (c) => c.rank == CardRank.values[base]),
+      _takeCard(deck, (c) => c.rank == CardRank.values[base + 1]),
+    ];
     final board = [
-      Card(suit: suits[2], rank: CardRank.values[baseIndex + 3]),
-      Card(suit: suits[3], rank: CardRank.values[baseIndex + 4]),
-      Card(suit: suits[0], rank: CardRank.two),
+      _takeCard(deck, (c) => c.rank == CardRank.values[base + 3]),
+      _takeCard(deck, (c) => c.rank == CardRank.values[base + 4]),
+      _takeCard(deck, (c) => c.rank == CardRank.two && c.rank != CardRank.values[base]),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: suits[1], rank: CardRank.ace));
+      board.add(_takeCard(deck, (c) => c.rank == CardRank.ace));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildOvercards(int boardCount) {
-    final suits = List<CardSuit>.from(CardSuit.values)..shuffle(_random);
-    final hole = [Card(suit: suits[0], rank: CardRank.ace), Card(suit: suits[1], rank: CardRank.king)];
+    final deck = _createNewDeck();
+    final hole = [
+      _takeCard(deck, (c) => c.rank == CardRank.ace),
+      _takeCard(deck, (c) => c.rank == CardRank.king),
+    ];
     final board = [
-      Card(suit: suits[2], rank: CardRank.eight),
-      Card(suit: suits[3], rank: CardRank.four),
-      Card(suit: suits[1], rank: CardRank.two),
+      _takeCard(deck, (c) => c.rank == CardRank.eight),
+      _takeCard(deck, (c) => c.rank == CardRank.four),
+      _takeCard(deck, (c) => c.rank == CardRank.two),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: suits[0], rank: CardRank.six));
+      board.add(_takeCard(deck, (c) => c.rank == CardRank.six));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildComboDraw(int boardCount) {
-    final flushSuit = _pickRandomSuit();
-    final otherSuits = CardSuit.values.where((s) => s != flushSuit).toList();
-    final hole = [Card(suit: flushSuit, rank: CardRank.jack), Card(suit: flushSuit, rank: CardRank.ten)];
+    final deck = _createNewDeck();
+    final suit = CardSuit.values[_random.nextInt(CardSuit.values.length)];
+
+    final hole = [
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.jack),
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.ten),
+    ];
     final board = [
-      Card(suit: flushSuit, rank: CardRank.eight),
-      Card(suit: flushSuit, rank: CardRank.seven),
-      Card(suit: otherSuits[0], rank: CardRank.two),
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.eight),
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.seven),
+      _takeCard(deck, (c) => c.suit != suit && c.rank == CardRank.two),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: otherSuits[1], rank: CardRank.four));
+      board.add(_takeCard(deck, (c) => c.suit != suit && c.rank == CardRank.four));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildMonsterDraw(int boardCount) {
-    final flushSuit = _pickRandomSuit();
-    final otherSuits = CardSuit.values.where((s) => s != flushSuit).toList();
-    final hole = [Card(suit: flushSuit, rank: CardRank.nine), Card(suit: flushSuit, rank: CardRank.eight)];
+    final deck = _createNewDeck();
+    final suit = CardSuit.values[_random.nextInt(CardSuit.values.length)];
+
+    final hole = [
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.nine),
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.eight),
+    ];
     final board = [
-      Card(suit: flushSuit, rank: CardRank.seven),
-      Card(suit: flushSuit, rank: CardRank.six),
-      Card(suit: otherSuits[0], rank: CardRank.two),
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.seven),
+      _takeCard(deck, (c) => c.suit == suit && c.rank == CardRank.six),
+      _takeCard(deck, (c) => c.suit != suit && c.rank == CardRank.two),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: otherSuits[1], rank: CardRank.king));
+      board.add(_takeCard(deck, (c) => c.suit != suit && c.rank == CardRank.king));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildTripsHand(int boardCount) {
-    final suits = List<CardSuit>.from(CardSuit.values)..shuffle(_random);
-    final tripsRank = CardRank.values[2 + _random.nextInt(8)];
-    final kickerRank = CardRank.values[tripsRank.index + 1];
-    final overRank = CardRank.ace;
+    final deck = _createNewDeck();
+    final rank = CardRank.values[2 + _random.nextInt(8)];
 
+    // 1 carta in mano del rank + 1 kicker
     final hole = [
-      Card(suit: suits[0], rank: tripsRank),
-      Card(suit: suits[1], rank: kickerRank),
+      _takeCard(deck, (c) => c.rank == rank),
+      _takeCard(deck, (c) => c.rank != rank),
     ];
+
+    // Esattamente 2 carte sul board dello stesso rank (pescate dal mazzo residuo)
     final board = [
-      Card(suit: suits[2], rank: tripsRank),
-      Card(suit: suits[3], rank: tripsRank),
-      Card(suit: suits[0], rank: overRank),
+      _takeCard(deck, (c) => c.rank == rank),
+      _takeCard(deck, (c) => c.rank == rank),
+      _takeCard(deck, (c) => c.rank == CardRank.ace && c.rank != rank),
     ];
+
     if (boardCount == 4) {
-      board.add(Card(suit: suits[1], rank: CardRank.two));
+      board.add(_takeCard(deck, (c) => c.rank != rank && c.rank != CardRank.ace));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildSetOnWetBoard(int boardCount) {
-    final flushSuit = _pickRandomSuit();
-    final otherSuits = CardSuit.values.where((s) => s != flushSuit).toList();
+    final deck = _createNewDeck();
     final setRank = CardRank.values[3 + _random.nextInt(6)];
+    final flushSuit = CardSuit.values[_random.nextInt(CardSuit.values.length)];
 
-    final hole = [Card(suit: otherSuits[0], rank: setRank), Card(suit: otherSuits[1], rank: setRank)];
+    // Pocket Pair in mano
+    final hole = [
+      _takeCard(deck, (c) => c.rank == setRank && c.suit != flushSuit),
+      _takeCard(deck, (c) => c.rank == setRank && c.suit != flushSuit),
+    ];
+
+    // Terza carta del set sul board a colore
     final board = [
-      Card(suit: flushSuit, rank: setRank),
-      Card(suit: flushSuit, rank: CardRank.ace),
-      Card(suit: flushSuit, rank: CardRank.ten),
+      _takeCard(deck, (c) => c.rank == setRank && c.suit == flushSuit),
+      _takeCard(deck, (c) => c.suit == flushSuit && c.rank != setRank),
+      _takeCard(deck, (c) => c.suit == flushSuit && c.rank != setRank),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: otherSuits[0], rank: CardRank.two));
+      board.add(_takeCard(deck, (c) => c.suit != flushSuit && c.rank != setRank));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildSetDominant(int boardCount) {
-    final suits = List<CardSuit>.from(CardSuit.values)..shuffle(_random);
+    final deck = _createNewDeck();
     final setRank = CardRank.values[4 + _random.nextInt(6)];
 
-    final hole = [Card(suit: suits[0], rank: setRank), Card(suit: suits[1], rank: setRank)];
+    final hole = [
+      _takeCard(deck, (c) => c.rank == setRank),
+      _takeCard(deck, (c) => c.rank == setRank),
+    ];
     final board = [
-      Card(suit: suits[2], rank: setRank),
-      Card(suit: suits[3], rank: CardRank.two),
-      Card(suit: suits[0], rank: CardRank.eight),
+      _takeCard(deck, (c) => c.rank == setRank),
+      _takeCard(deck, (c) => c.rank == CardRank.two && c.rank != setRank),
+      _takeCard(deck, (c) => c.rank == CardRank.eight && c.rank != setRank),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: suits[1], rank: CardRank.king));
+      board.add(_takeCard(deck, (c) => c.rank == CardRank.king && c.rank != setRank));
     }
     return (hole, board);
   }
 
   (List<Card>, List<Card>) _buildTrashHand(int boardCount) {
-    final suits = List<CardSuit>.from(CardSuit.values)..shuffle(_random);
-    final hole = [Card(suit: suits[0], rank: CardRank.eight), Card(suit: suits[1], rank: CardRank.three)];
+    final deck = _createNewDeck();
+    final hole = [
+      _takeCard(deck, (c) => c.rank == CardRank.eight),
+      _takeCard(deck, (c) => c.rank == CardRank.three),
+    ];
     final board = [
-      Card(suit: suits[2], rank: CardRank.king),
-      Card(suit: suits[3], rank: CardRank.jack),
-      Card(suit: suits[0], rank: CardRank.four),
+      _takeCard(deck, (c) => c.rank == CardRank.king),
+      _takeCard(deck, (c) => c.rank == CardRank.jack),
+      _takeCard(deck, (c) => c.rank == CardRank.four),
     ];
     if (boardCount == 4) {
-      board.add(Card(suit: suits[1], rank: CardRank.two));
+      board.add(_takeCard(deck, (c) => c.rank == CardRank.two));
     }
     return (hole, board);
   }
