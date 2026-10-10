@@ -135,11 +135,6 @@ class _OddsTrainingScreenState extends State<OddsTrainingScreen> {
                             style: TextStyle(height: 1.35),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Sconto Multiway:\n'
-                            'In 6 giocatori: -1% | In 7: -2% | In 8: -3% | In 9: -4% | In 10: -5%',
-                            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.blueGrey),
-                          ),
                           const SizedBox(height: 14),
 
                           // BOX SUI CASI WET/DRY

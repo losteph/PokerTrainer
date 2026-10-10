@@ -6,6 +6,7 @@ class HandOutsAnalysis {
   final Set<Card> dirtyOuts;
   final String description;
   final bool isDominantMadeHand;
+  final double effectiveOuts;
 
   const HandOutsAnalysis({
     required this.totalOuts,
@@ -13,7 +14,8 @@ class HandOutsAnalysis {
     required this.dirtyOuts,
     required this.description,
     this.isDominantMadeHand = false,
-  });
+    double? effectiveOuts,
+  }) : effectiveOuts = effectiveOuts ?? 0.0;
 }
 
 class OutsEvaluator {
@@ -21,288 +23,417 @@ class OutsEvaluator {
     required List<Card> hole,
     required List<Card> board,
   }) {
-    final allKnown = [...hole, ...board];
-
-    // 0. VERIFICA PUNTI ASSOLUTI GIÀ CHIUSI (Poker o Full)
-    if (_hasFourOfAKind(hole, board)) {
-      return const HandOutsAnalysis(
-        totalOuts: 0,
-        cleanOuts: {},
-        dirtyOuts: {},
-        description: 'Poker Servito (Mano Imbattibile - Made Hand)',
-        isDominantMadeHand: true,
-      );
+    if (hole.length != 2 || (board.length != 3 && board.length != 4)) {
+      throw ArgumentError('Servono 2 carte private e 3 o 4 sul board.');
     }
 
-    if (_hasFullHouse(hole, board)) {
-      return const HandOutsAnalysis(
-        totalOuts: 0,
-        cleanOuts: {},
-        dirtyOuts: {},
-        description: 'Full Servito (Mano Dominante - Made Hand)',
-        isDominantMadeHand: true,
-      );
+    final known = [...hole, ...board];
+    final used = known.map(_key).toSet();
+
+    if (used.length != known.length) {
+      throw ArgumentError('Carte duplicate nello scenario.');
     }
 
-    // CASO 1: Set da Pocket Pair (es. 7-7 in mano con un 7 a terra)
-    if (_isPocketSet(hole, board)) {
-      if (_isWetBoard(board)) {
-        final outs = _getSetOuts(hole, board);
-        return HandOutsAnalysis(
-          totalOuts: outs.length,
-          cleanOuts: outs,
-          dirtyOuts: {},
-          description: 'Set su Board Pericoloso (${outs.length} outs per Full/Poker)',
-        );
-      } else {
-        return const HandOutsAnalysis(
-          totalOuts: 0,
-          cleanOuts: {},
-          dirtyOuts: {},
-          description: 'Set Servito su Board Asciutto (Mano Dominante)',
-          isDominantMadeHand: true,
-        );
-      }
-    }
+    final remaining = _remainingDeck(known);
 
-    // CASO 2: Trips con carta singola in mano (es. 7-8 su 7-7-A o J-9 su J-J-K)
-    if (_isBoardTrips(hole, board)) {
-      return _evaluateTrips(hole, board);
-    }
-
-    // CASO 3: Progetti di Scala, Colore e Combo
-    final remainingDeck = _getRemainingDeck(allKnown);
-    final rawOuts = <Card>{};
-    bool makesFlush = false;
-    bool makesStraight = false;
-
-    for (final candidate in remainingDeck) {
-      final testCards = [...allKnown, candidate];
-      final flush = _hasFlush(testCards);
-      final straight = _hasStraight(testCards);
-
-      if (flush || straight) {
-        rawOuts.add(candidate);
-        if (flush) makesFlush = true;
-        if (straight) makesStraight = true;
-      }
-    }
-
-    // FILTRO OUTS SPORCHI: Se cerchiamo scala ma a terra ci sono 2 o 3 carte a colore
-    final cleanOuts = <Card>{};
-    final dirtyOuts = <Card>{};
-    final flushThreatSuit = _getBoardFlushThreatSuit(board);
-
-    for (final out in rawOuts) {
-      if (!makesFlush && flushThreatSuit != null && out.suit == flushThreatSuit) {
-        dirtyOuts.add(out);
-      } else {
-        cleanOuts.add(out);
-      }
-    }
-
-    // CASO 4: Se non ci sono draw di colore/scala, verifichiamo le 2 Overcards
-    if (rawOuts.isEmpty && _hasTwoOvercards(hole, board)) {
-      final overcards = _getOvercardOuts(hole, allKnown);
-      return HandOutsAnalysis(
-        totalOuts: overcards.length,
-        cleanOuts: overcards,
-        dirtyOuts: {},
-        description: '2 Overcards (${overcards.length} outs per Top Pair)',
-      );
-    }
-
-    final count = cleanOuts.length;
-    String desc;
-
-    if (makesFlush && makesStraight) {
-      desc = count >= 12 ? 'Monster Draw (Colore + Scala)' : 'Combo Draw';
-    } else if (makesFlush) {
-      desc = 'Flush Draw (Colore)';
-    } else if (makesStraight) {
-      final dirtyNote = dirtyOuts.isNotEmpty ? ' (${dirtyOuts.length} out sporchi scartati)' : '';
-      desc = count >= 8 ? 'Scala Bilaterale (OESD)$dirtyNote' : 'Gutshot a Incastro$dirtyNote';
-    } else if (count == 0) {
-      desc = 'Mano Spazzatura (No Draw)';
-    } else {
-      desc = 'Progetto ($count outs)';
-    }
-
-    return HandOutsAnalysis(
-      totalOuts: count,
-      cleanOuts: cleanOuts,
-      dirtyOuts: dirtyOuts,
-      description: desc,
-    );
-  }
-
-  // --- LOGICHE MATEMATICHE ---
-
-  static bool _hasFourOfAKind(List<Card> hole, List<Card> board) {
-    final all = [...hole, ...board];
-    final counts = <CardRank, int>{};
-    for (final c in all) {
-      counts[c.rank] = (counts[c.rank] ?? 0) + 1;
-      if (counts[c.rank]! >= 4) return true;
-    }
-    return false;
-  }
-
-  static bool _hasFullHouse(List<Card> hole, List<Card> board) {
-    final all = [...hole, ...board];
-    final counts = <CardRank, int>{};
-    for (final c in all) {
-      counts[c.rank] = (counts[c.rank] ?? 0) + 1;
-    }
-    final hasThree = counts.values.any((v) => v >= 3);
-    final pairs = counts.values.where((v) => v >= 2).length;
-    return hasThree && pairs >= 2;
-  }
-
-  static bool _isPocketSet(List<Card> hole, List<Card> board) {
-    if (hole[0].rank != hole[1].rank) return false;
-    return board.any((b) => b.rank == hole[0].rank);
-  }
-
-  static bool _isBoardTrips(List<Card> hole, List<Card> board) {
-    final boardRanks = board.map((c) => c.rank).toList();
-    for (final h in hole) {
-      if (boardRanks.where((r) => r == h.rank).length >= 2) return true;
-    }
-    return false;
-  }
-
-  static HandOutsAnalysis _evaluateTrips(List<Card> hole, List<Card> board) {
-    final tripsRank = hole.firstWhere(
-      (h) => board.where((b) => b.rank == h.rank).length >= 2,
-    ).rank;
-
-    final kicker = hole.firstWhere((h) => h.rank != tripsRank);
-    final boardOtherRanks = board.where((b) => b.rank != tripsRank).map((b) => b.rank).toList();
+    final made = _madeHand(hole, board);
+    final madeName = made.$1;
 
     final clean = <Card>{};
     final dirty = <Card>{};
+    final discounted = <Card>{};
 
-    for (final suit in CardSuit.values) {
-      // 1. Quarta carta uguale -> Poker (sempre Clean)
-      final pokerCard = Card(suit: suit, rank: tripsRank);
-      if (!hole.contains(pokerCard) && !board.contains(pokerCard)) {
-        clean.add(pokerCard);
+    final hasFlush = _hasFlush(known);
+    final hasStraight = _hasStraight(known);
+
+    final counts = _counts(known);
+
+    final isPocketSet =
+        hole[0].rank == hole[1].rank &&
+        board.any((c) => c.rank == hole[0].rank);
+
+    final boardHasThreeOfSuit = CardSuit.values.any(
+     (suit) => board.where((c) => c.suit == suit).length >= 3,
+    );
+
+    final boardHasFourOfSuit = CardSuit.values.any(
+      (suit) => board.where((c) => c.suit == suit).length >= 4,
+    );
+
+    final boardHasPair =
+        _counts(board).values.any((count) => count >= 2);
+
+    bool flushDraw = false;
+    bool straightDraw = false;
+
+    // Un set su board monotone non e' automaticamente dominante.
+    // Le carte che completano full o poker sono outs utili.
+    if (isPocketSet) {
+      final setRank = hole[0].rank;
+
+      for (final candidate in remaining) {
+        final makesQuads = candidate.rank == setRank;
+
+        final makesFull = board.any(
+          (b) => b.rank == candidate.rank && b.rank != setRank,
+        );
+
+        if (makesQuads || makesFull) {
+          clean.add(candidate);
+        }
       }
 
-      // 2. Carta uguale al nostro kicker -> Full imbattibile
-      final kickerFull = Card(suit: suit, rank: kicker.rank);
-      if (!hole.contains(kickerFull) && !board.contains(kickerFull)) {
-        clean.add(kickerFull);
+      final danger = boardHasThreeOfSuit
+          ? ' - attenzione: possibile colore avversario'
+          : boardHasPair
+              ? ' - board accoppiato'
+              : ' - set gia formato';
+
+      return HandOutsAnalysis(
+        totalOuts: clean.length,
+        effectiveOuts: clean.length.toDouble(),
+        cleanOuts: clean,
+        dirtyOuts: dirty,
+        description:
+            'Set (tris con pocket pair)$danger; '
+            '${clean.length} outs per full/poker',
+        isDominantMadeHand: false,
+      );
+    }
+
+    // Progetti che usano davvero le carte private.
+    for (final candidate in remaining) {
+      final after = [...known, candidate];
+
+      final completesFlush = !hasFlush && _hasFlush(after);
+      final completesStraight = !hasStraight && _hasStraight(after);
+
+      if (!completesFlush && !completesStraight) continue;
+
+      final personalFlush = completesFlush &&
+          _bestFlushUsesHole(hole, board, candidate);
+
+      final personalStraight = completesStraight &&
+          _straightUsesHole(hole, board, candidate);
+
+      if (!personalFlush && !personalStraight) {
+        dirty.add(candidate);
+        continue;
       }
 
-      // 3. Carte che accoppiano le altre del board
-      for (final otherRank in boardOtherRanks) {
-        final pairCard = Card(suit: suit, rank: otherRank);
-        if (!board.contains(pairCard)) {
-          if (otherRank.index > tripsRank.index) {
-            dirty.add(pairCard); // Rischio overfull per l'avversario
-          } else {
-            clean.add(pairCard);
-          }
+      if (personalFlush) {
+        flushDraw = true;
+
+        // Se abbiamo A del seme del colore, e' il colore nuts.
+        final flushSuit = candidate.suit;
+
+        final hasNutAce = hole.any(
+          (h) =>
+              h.rank == CardRank.ace &&
+              h.suit == flushSuit,
+        );
+
+        if (hasNutAce) {
+          clean.add(candidate);
+        } else {
+          // Colore non nuts: resta utile, ma non garantito.
+          // Non lo eliminiamo automaticamente.
+          clean.add(candidate);
+        }
+
+        continue;
+      }
+
+      if (personalStraight) {
+        straightDraw = true;
+
+        if (_opponentFlushThreat(board, candidate)) {
+          dirty.add(candidate);
+        } else {
+          clean.add(candidate);
         }
       }
     }
 
+    // Overcard: contiamo per intero le carte che
+    // formano una coppia superiore al board.
+    final personalPair = _hasPersonalPair(hole, board);
+
+    final maxBoard = board
+        .map((c) => c.rank.index)
+        .reduce((a, b) => a > b ? a : b);
+
+    final twoOvercards =
+        hole[0].rank != hole[1].rank &&
+        hole.every((c) => c.rank.index > maxBoard);
+
+    if (!personalPair && twoOvercards) {
+      for (final candidate in remaining) {
+        final makesPair = hole.any(
+          (h) => h.rank == candidate.rank,
+        );
+
+        if (makesPair &&
+            !_containsCard(clean, candidate) &&
+            !_containsCard(dirty, candidate)) {
+          clean.add(candidate);
+        }
+      }
+    }
+
+    // Coppia personale: le carte residue dello stesso
+    // rango possono completare il tris.
+    if (personalPair) {
+      for (final candidate in remaining) {
+        final matchingHole = hole.any(
+          (h) => h.rank == candidate.rank,
+        );
+
+        if (matchingHole &&
+            (counts[candidate.rank] ?? 0) == 2 &&
+            !_containsCard(clean, candidate) &&
+            !_containsCard(dirty, candidate)) {
+          clean.add(candidate);
+        }
+      }
+    }
+
+    final effective = clean.length.toDouble();
+
+
+    final parts = <String>[];
+
+    if (madeName.isNotEmpty) {
+      parts.add(madeName);
+    }
+
+    if (flushDraw && straightDraw) {
+      parts.add('Progetto colore + scala');
+    } else if (flushDraw) {
+      parts.add('Progetto di colore');
+    } else if (straightDraw) {
+      parts.add('Progetto di scala');
+    }
+
+    final excluded = dirty.length;
+
+    if (excluded > 0) {
+      parts.add('$excluded outs a rischio esclusi');
+    }
+
+    if (boardHasFourOfSuit && !hasFlush) {
+      parts.add('Attenzione: board con quattro carte dello stesso seme');
+    }
+
+    if (parts.isEmpty) {
+      parts.add('Carta alta senza progetto riconosciuto');
+    }
+
+    // Non assegnare automaticamente 100% di equity a set,
+    // tris, scala, colore o full: dipende dal board e dal range.
     return HandOutsAnalysis(
       totalOuts: clean.length,
+      effectiveOuts: effective,
       cleanOuts: clean,
       dirtyOuts: dirty,
-      description: 'Trips con Kicker (${clean.length} outs puliti, ${dirty.length} esclusi per rischio overfull)',
+      description: parts.join(' + '),
+      isDominantMadeHand: false,
     );
   }
 
-  static bool _isWetBoard(List<Card> board) {
-    final suits = <CardSuit, int>{};
-    for (final b in board) {
-      suits[b.suit] = (suits[b.suit] ?? 0) + 1;
-      if (suits[b.suit]! >= 3) return true;
-    }
-    return false;
-  }
+  static String _key(Card card) =>
+      '${card.rank.index}-${card.suit.index}';
 
-  static Set<Card> _getSetOuts(List<Card> hole, List<Card> board) {
-    final setRank = hole[0].rank;
-    final outs = <Card>{};
-    for (final suit in CardSuit.values) {
-      final fourth = Card(suit: suit, rank: setRank);
-      if (!hole.contains(fourth) && !board.contains(fourth)) outs.add(fourth);
+  static bool _containsCard(Set<Card> cards, Card target) =>
+      cards.any((card) =>
+          card.rank == target.rank && card.suit == target.suit);
 
-      for (final b in board) {
-        if (b.rank != setRank) {
-          final pairUp = Card(suit: suit, rank: b.rank);
-          if (!board.contains(pairUp)) outs.add(pairUp);
-        }
-      }
-    }
-    return outs;
-  }
+  static List<Card> _remainingDeck(List<Card> known) {
+    final used = known.map(_key).toSet();
+    final result = <Card>[];
 
-  static CardSuit? _getBoardFlushThreatSuit(List<Card> board) {
-    final counts = <CardSuit, int>{};
-    for (final b in board) {
-      counts[b.suit] = (counts[b.suit] ?? 0) + 1;
-      if (counts[b.suit]! >= 2) return b.suit;
-    }
-    return null;
-  }
-
-  static List<Card> _getRemainingDeck(List<Card> known) {
-    final deck = <Card>[];
     for (final suit in CardSuit.values) {
       for (final rank in CardRank.values) {
         final card = Card(suit: suit, rank: rank);
-        if (!known.any((k) => k.suit == card.suit && k.rank == card.rank)) {
-          deck.add(card);
+        if (!used.contains(_key(card))) {
+          result.add(card);
         }
       }
     }
-    return deck;
+
+    return result;
+  }
+
+  static Map<CardRank, int> _counts(List<Card> cards) {
+    final result = <CardRank, int>{};
+    for (final card in cards) {
+      result[card.rank] = (result[card.rank] ?? 0) + 1;
+    }
+    return result;
+  }
+
+  static bool _hasPersonalPair(
+    List<Card> hole,
+    List<Card> board,
+  ) {
+    if (hole[0].rank == hole[1].rank) return true;
+
+    return hole.any(
+      (h) => board.any((b) => b.rank == h.rank),
+    );
   }
 
   static bool _hasFlush(List<Card> cards) {
-    final counts = <CardSuit, int>{};
-    for (final c in cards) {
-      counts[c.suit] = (counts[c.suit] ?? 0) + 1;
-      if (counts[c.suit]! >= 5) return true;
-    }
-    return false;
-  }
-
-  static bool _hasStraight(List<Card> cards) {
-    final ranks = cards.map((c) => c.rank.index).toSet();
-    if (ranks.contains(12)) ranks.add(-1);
-
-    for (int start = -1; start <= 8; start++) {
-      if (ranks.contains(start) &&
-          ranks.contains(start + 1) &&
-          ranks.contains(start + 2) &&
-          ranks.contains(start + 3) &&
-          ranks.contains(start + 4)) {
+    for (final suit in CardSuit.values) {
+      if (cards.where((c) => c.suit == suit).length >= 5) {
         return true;
       }
     }
     return false;
   }
 
-  static bool _hasTwoOvercards(List<Card> hole, List<Card> board) {
-    final maxBoardRank = board.map((c) => c.rank.index).reduce((a, b) => a > b ? a : b);
-    return hole[0].rank.index > maxBoardRank && hole[1].rank.index > maxBoardRank;
+  static bool _hasStraight(List<Card> cards) {
+    final ranks = cards.map((c) => c.rank.index).toSet();
+
+    // CardRank segue l'ordine 2 ... A.
+    if (ranks.contains(CardRank.ace.index)) {
+      ranks.add(-1);
+    }
+
+    for (int start = -1; start <= 8; start++) {
+      if (List.generate(5, (i) => start + i)
+          .every(ranks.contains)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  static Set<Card> _getOvercardOuts(List<Card> hole, List<Card> known) {
-    final outs = <Card>{};
+  static bool _bestFlushUsesHole(
+    List<Card> hole,
+    List<Card> board,
+    Card candidate,
+  ) {
+    final all = [...hole, ...board, candidate];
+
     for (final suit in CardSuit.values) {
-      final c1 = Card(suit: suit, rank: hole[0].rank);
-      final c2 = Card(suit: suit, rank: hole[1].rank);
-      if (!known.contains(c1)) outs.add(c1);
-      if (!known.contains(c2)) outs.add(c2);
+      final suited = all.where((c) => c.suit == suit).toList();
+
+      if (suited.length >= 5 &&
+          hole.any((h) => h.suit == suit)) {
+        return true;
+      }
     }
-    return outs;
+
+    return false;
+  }
+
+  static bool _straightUsesHole(
+    List<Card> hole,
+    List<Card> board,
+    Card candidate,
+  ) {
+    final all = [...hole, ...board, candidate];
+
+    if (!_hasStraight(all)) return false;
+
+    // Se togliendo entrambe le hole la scala resta sul board,
+    // non e' un progetto personale.
+    return !_hasStraight([...board, candidate]);
+  }
+
+  static bool _opponentFlushThreat(
+    List<Card> board,
+    Card candidate,
+  ) {
+    final withCandidate = [...board, candidate];
+
+    for (final suit in CardSuit.values) {
+      if (withCandidate.where((c) => c.suit == suit).length >= 3) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static (String, bool) _madeHand(
+    List<Card> hole,
+    List<Card> board,
+  ) {
+    final all = [...hole, ...board];
+    final counts = _counts(all);
+    final boardCounts = _counts(board);
+
+    final four = counts.values.any((n) => n == 4);
+    final three = counts.values.any((n) => n >= 3);
+    final pairRanks =
+        counts.values.where((n) => n >= 2).length;
+
+    final full = three && pairRanks >= 2;
+
+    if (four) return ('Poker già formato', true);
+    if (full) return ('Full house già formato', true);
+
+    if (_hasFlush(all)) {
+      return ('Colore già chiuso', true);
+    }
+
+    if (_hasStraight(all)) {
+      return ('Scala già chiusa', true);
+    }
+
+    if (three) {
+      final personalTrips = counts.entries.any(
+        (entry) =>
+            entry.value >= 3 &&
+            hole.any((h) => h.rank == entry.key),
+      );
+
+      return (
+        personalTrips
+            ? 'Tris già formato'
+            : 'Tris condiviso sul board',
+        personalTrips,
+      );
+    }
+
+    if (pairRanks >= 2) {
+      return ('Doppia coppia già formata', false);
+    }
+
+    if (pairRanks == 1) {
+      final boardPaired =
+          boardCounts.values.any((n) => n >= 2);
+
+      if (boardPaired && !_hasPersonalPair(hole, board)) {
+        return ('Coppia sul board (condivisa)', false);
+      }
+
+      if (hole[0].rank == hole[1].rank) {
+        return ('Pocket pair già formata', false);
+      }
+
+      final matchingHole = hole.where(
+        (h) => board.any((b) => b.rank == h.rank),
+      );
+
+      if (matchingHole.isNotEmpty) {
+        final maxBoard = board
+            .map((c) => c.rank.index)
+            .reduce((a, b) => a > b ? a : b);
+
+        if (matchingHole.first.rank.index == maxBoard) {
+          return ('Top pair già formata', false);
+        }
+
+        return ('Coppia personale già formata', false);
+      }
+
+      return ('Coppia già formata', false);
+    }
+
+    return ('', false);
   }
 }

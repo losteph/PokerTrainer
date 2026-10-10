@@ -14,10 +14,11 @@ class OddsTrainingScenario {
   final List<Card> boardCards;
   final String drawDescription;
   final int outs;
+  final double effectiveOuts;
   final BetSizeCategory betSize;
   final double pot;
   final double callAmount;
-  final double userStack; // <--- NUOVO: stack del giocatore
+  final double userStack;
   final int playerCount;
   final OddsRuleMode mode;
   final bool isDominantMadeHand;
@@ -27,6 +28,7 @@ class OddsTrainingScenario {
     required this.boardCards,
     required this.drawDescription,
     required this.outs,
+    double? effectiveOuts,
     required this.betSize,
     required this.pot,
     required this.callAmount,
@@ -34,36 +36,30 @@ class OddsTrainingScenario {
     required this.playerCount,
     required this.mode,
     this.isDominantMadeHand = false,
-  });
+  }) : effectiveOuts = effectiveOuts ?? 0.0;
 
-  bool get isAllIn => callAmount >= userStack || betSize == BetSizeCategory.allIn;
+  bool get isAllIn =>
+      callAmount >= userStack ||
+      betSize == BetSizeCategory.allIn;
 
   double get estimatedEquity {
-    if (isDominantMadeHand) return 100.0;
+    final outsValue = outs.toDouble();
+
     if (mode == OddsRuleMode.ruleOf4) {
-      final base = outs * 4.0;
-      return outs >= 8 ? (base - 1.0) : base;
-    } else {
-      final base = outs * 2.0;
-      return outs >= 8 ? (base + 1.0) : base;
+      final base = outsValue * 4.0;
+      return outsValue >= 8 ? base - 1.0 : base;
     }
+
+    final base = outsValue * 2.0;
+    return outsValue >= 8 ? base + 1.0 : base;
   }
 
-  double get multiwayDiscount {
-    if (playerCount >= 6 && playerCount <= 10) {
-      return (playerCount - 5).toDouble();
-    }
-    return 0.0;
-  }
+  double get multiwayDiscount => 0.0;
 
-  double get adjustedRequiredEquity {
-    final finalReq = betSize.requiredEquity - multiwayDiscount;
-    return finalReq < 0 ? 0.0 : finalReq;
-  }
+  double get adjustedRequiredEquity =>
+      betSize.requiredEquity;
 
   bool get isCallCorrect {
-    if (isDominantMadeHand) return true;
-    if (outs == 0) return false;
-    return estimatedEquity >= adjustedRequiredEquity;
+    return estimatedEquity >= betSize.requiredEquity;
   }
 }
