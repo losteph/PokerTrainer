@@ -41,7 +41,6 @@ class OutsEvaluator {
 
     final clean = <Card>{};
     final dirty = <Card>{};
-    final discounted = <Card>{};
 
     final hasFlush = _hasFlush(known);
     final hasStraight = _hasStraight(known);
@@ -59,9 +58,6 @@ class OutsEvaluator {
     final boardHasFourOfSuit = CardSuit.values.any(
       (suit) => board.where((c) => c.suit == suit).length >= 4,
     );
-
-    final boardHasPair =
-        _counts(board).values.any((count) => count >= 2);
 
     bool flushDraw = false;
     bool straightDraw = false;
@@ -83,21 +79,19 @@ class OutsEvaluator {
         }
       }
 
-      final danger = boardHasThreeOfSuit
-          ? ' - attenzione: possibile colore avversario'
-          : boardHasPair
-              ? ' - board accoppiato'
-              : ' - set gia formato';
-
       return HandOutsAnalysis(
         totalOuts: clean.length,
         effectiveOuts: clean.length.toDouble(),
         cleanOuts: clean,
         dirtyOuts: dirty,
-        description:
-            'Set (tris con pocket pair)$danger; '
-            '${clean.length} outs per full/poker',
-        isDominantMadeHand: false,
+        description: boardHasThreeOfSuit ||
+                _hasStraightThreat(board)
+            ? 'Set su board pericoloso - '
+                '${clean.length} outs per Full/Poker'
+            : 'Set già formato su board asciutto',
+        isDominantMadeHand:
+            !boardHasThreeOfSuit &&
+            !_hasStraightThreat(board),
       );
     }
 
@@ -198,6 +192,37 @@ class OutsEvaluator {
       }
     }
 
+
+    // Coppia condivisa sul board:
+    // una carta che abbina una delle nostre hole
+    // puo' formare doppia coppia.
+    final boardHasExactlyOnePair =
+        _counts(board).values.where((n) => n == 2).length == 1;
+
+    if (boardHasExactlyOnePair && !personalPair) {
+      for (final candidate in remaining) {
+        final highestBoardRank = board
+            .map((c) => c.rank.index)
+            .reduce((a, b) => a > b ? a : b);
+
+        final highestHoleRank =
+            hole[0].rank.index > hole[1].rank.index
+                ? hole[0].rank
+                : hole[1].rank;    
+
+        final makesTwoPair =
+            candidate.rank == highestHoleRank &&
+            highestHoleRank.index > highestBoardRank;
+
+        if (makesTwoPair && candidate.rank.index > board.map((b) => b.rank.index).reduce((a, b) => a > b ? a : b) &&
+            !_containsCard(clean, candidate) &&
+            !_containsCard(dirty, candidate)) {
+          clean.add(candidate);
+        }
+      }
+    }
+
+
     final effective = clean.length.toDouble();
 
 
@@ -237,8 +262,120 @@ class OutsEvaluator {
       cleanOuts: clean,
       dirtyOuts: dirty,
       description: parts.join(' + '),
-      isDominantMadeHand: false,
+      isDominantMadeHand: _isStrongMadeHand(hole, board),
     );
+  }
+
+  static bool _hasFlushThreat(List<Card> board) {
+   return CardSuit.values.any(
+      (suit) => board.where((c) => c.suit == suit).length >= 3,
+    );
+  }
+
+  static bool _hasStraightThreat(List<Card> board) {
+    final ranks = board.map((c) => c.rank.index).toSet();
+
+    if (ranks.contains(CardRank.ace.index)) {
+      ranks.add(-1);
+    }
+
+    for (int start = -1; start <= 8; start++) {
+      int present = 0;
+
+      for (int i = 0; i < 5; i++) {
+        if (ranks.contains(start + i)) present++;
+      }
+
+      // Con 3 carte consecutive/compatibili sul board
+      // un avversario potrebbe avere gia' scala.
+      if (present >= 3) return true;
+    }
+
+    return false;
+  }
+
+  static bool _hasStrongPersonalTwoPair(
+    List<Card> hole,
+    List<Card> board,
+  ) {
+    if (hole[0].rank == hole[1].rank) return false;
+
+    final bothPaired = hole.every(
+      (h) => board.any((b) => b.rank == h.rank),
+    );
+
+    if (!bothPaired) return false;
+
+    final highestBoard = board
+        .map((c) => c.rank.index)
+        .reduce((a, b) => a > b ? a : b);
+
+    final lowestHole = hole
+        .map((c) => c.rank.index)
+        .reduce((a, b) => a < b ? a : b);
+
+    return lowestHole >= highestBoard - 2;
+  }
+
+  static bool _isStrongMadeHand(
+    List<Card> hole,
+    List<Card> board,
+  ) {
+    final all = [...hole, ...board];
+    final counts = _counts(all);
+    final boardCounts = _counts(board);
+
+    final flushThreat = _hasFlushThreat(board);
+    final straightThreat = _hasStraightThreat(board);
+    final boardPaired = boardCounts.values.any((n) => n >= 2);
+
+    final fourOfKind =
+        counts.values.any((count) => count == 4);
+
+    if (fourOfKind) return true;
+
+    final hasThree =
+        counts.values.any((count) => count >= 3);
+
+    final hasSecondPair =
+        counts.values.where((count) => count >= 2).length >= 2;
+
+    if (hasThree && hasSecondPair) {
+      // Full personale: considerato forte nel nostro trainer.
+      return true;
+    }
+
+    if (_hasFlush(all)) {
+      final personalFlush = CardSuit.values.any((suit) =>
+        all.where((c) => c.suit == suit).length >= 5 &&
+        hole.any((h) => h.suit == suit));
+
+      return personalFlush && !boardPaired;
+    }
+
+    if (_hasStraight(all)) {
+      final personalStraight = !_hasStraight(board);
+
+      return personalStraight &&
+          !flushThreat &&
+          !boardPaired;
+    }
+
+    final personalTrips = counts.entries.any(
+      (entry) =>
+          entry.value >= 3 &&
+          hole.any((h) => h.rank == entry.key),
+    );
+
+    if (personalTrips) {
+      return !flushThreat && !straightThreat;
+    }
+
+    if (_hasStrongPersonalTwoPair(hole, board)) {
+      return !flushThreat && !straightThreat && !boardPaired;
+    }
+
+    return false;
   }
 
   static String _key(Card card) =>

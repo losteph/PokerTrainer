@@ -56,9 +56,13 @@ class OddsController extends ChangeNotifier {
 
     final estimated = scenario.estimatedEquity;
     final required = scenario.betSize.requiredEquity;
-    final isPositiveEv = estimated >= required;
+    final isPositiveEv = scenario.isCallCorrect;
 
-    final comparison = isPositiveEv ? '>=' : '<';
+    final comparison = scenario.isDominantMadeHand
+      ? 'MANO FORTE'
+      : estimated >= required
+          ? '>='
+          : '<';
 
     final explanation =
         'Scenario: ${scenario.drawDescription}\n\n'
@@ -72,8 +76,10 @@ class OddsController extends ChangeNotifier {
         '${correction == 0 ? '' : ' '
             '${correction > 0 ? '+' : '-'} '
             '${correction.abs().toStringAsFixed(0)}%'}\n\n'
-        '${estimated.toStringAsFixed(1)}% $comparison '
-        '${required.toStringAsFixed(1)}%\n'
+        '${scenario.isDominantMadeHand
+          ? comparison
+          : '${estimated.toStringAsFixed(1)}% $comparison '
+            '${required.toStringAsFixed(1)}%'}\n'
         '${isPositiveEv ? '+EV → CALL' : '-EV → FOLD'}';
 
     _feedback = OddsFeedback(
