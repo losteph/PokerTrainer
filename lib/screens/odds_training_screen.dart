@@ -126,7 +126,7 @@ class _OddsTrainingScreenState extends State<OddsTrainingScreen> {
                             '• Pot / 2  → 25%\n'
                             '• 2/3 Pot  → 29%\n'
                             '• 3/4 Pot  → 30%\n'
-                            '• 1x Pot   → 39%\n'
+                            '• 1x Pot   → 33%\n'
                             '• 2x Pot   → 40%\n'
                             '• 3x Pot   → 43%\n'
                             '• 4x Pot   → 45%\n'

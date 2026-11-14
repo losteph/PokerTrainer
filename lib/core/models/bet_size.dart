@@ -6,7 +6,7 @@ enum BetSizeCategory {
   potHalf('Pot / 2', 0.50, 25.0),
   twoThirdsPot('2/3 Pot', 0.66, 29.0),
   threeQuarterPot('3/4 Pot', 0.75, 30.0),
-  potFull('Pot', 1.0, 39.0),
+  potFull('Pot', 1.0, 33.0),
   twoPot('2x Pot', 2.0, 40.0),
   threePot('3x Pot', 3.0, 43.0),
   fourPot('4x Pot', 4.0, 45.0),
