@@ -56,8 +56,12 @@ class OddsTrainingScenario {
 
   double get multiwayDiscount => 0.0;
 
-  double get adjustedRequiredEquity =>
-      betSize.requiredEquity;
+  double get adjustedRequiredEquity {
+    if (!isAllIn) return betSize.requiredEquity;
+
+    return (callAmount / (pot + 2 * callAmount) * 100)
+        .clamp(0.0, 100.0);
+  }
 
 
   bool get hasPlayableTopPair {
@@ -135,6 +139,6 @@ class OddsTrainingScenario {
     // regola del 4/2 e tabella pot odds.
     if (outs <= 0) return false;
 
-    return estimatedEquity >= betSize.requiredEquity;
+    return estimatedEquity >= adjustedRequiredEquity;
   }
 }

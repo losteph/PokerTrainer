@@ -79,17 +79,20 @@ class OutsEvaluator {
         }
       }
 
+      final dangerousBoard =
+          boardHasThreeOfSuit ||
+          _hasStraightThreat(board);
+
       return HandOutsAnalysis(
         totalOuts: clean.length,
         effectiveOuts: clean.length.toDouble(),
         cleanOuts: clean,
         dirtyOuts: dirty,
-        description: boardHasThreeOfSuit ||
-                _hasStraightThreat(board)
-            ? 'Set su board pericoloso - '
+        description: dangerousBoard
+            ? 'Set già formato su board pericoloso - '
                 '${clean.length} outs per Full/Poker'
             : 'Set già formato su board asciutto',
-        isDominantMadeHand:
+        isDominantMadeHand: 
             !boardHasThreeOfSuit &&
             !_hasStraightThreat(board),
       );

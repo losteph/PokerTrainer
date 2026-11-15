@@ -131,7 +131,7 @@ class _OddsTrainingScreenState extends State<OddsTrainingScreen> {
                             '• 3x Pot   → 43%\n'
                             '• 4x Pot   → 45%\n'
                             '• 5x Pot   → 46%\n'
-                            '• All-in   → 51%',
+                            '• All-in   → 51%, o Variabile (con Pot odds)',
                             style: TextStyle(height: 1.35),
                           ),
                           const SizedBox(height: 8),

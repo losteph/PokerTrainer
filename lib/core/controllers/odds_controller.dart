@@ -55,7 +55,7 @@ class OddsController extends ChangeNotifier {
         : 0.0;
 
     final estimated = scenario.estimatedEquity;
-    final required = scenario.betSize.requiredEquity;
+    final required = scenario.adjustedRequiredEquity;
     final isPositiveEv = scenario.isCallCorrect;
 
     final comparison = scenario.isDominantMadeHand
@@ -841,46 +841,42 @@ class OddsController extends ChangeNotifier {
   (List<Card>, List<Card>) _buildTrashHand(
     int boardCount,
   ) {
-    final deck = _createNewDeck();
+    for (int attempt = 0; attempt < 200; attempt++) {
+      final deck = _createNewDeck();
 
-    final hole = [
-      _takeCard(
-        deck,
-        (c) => c.rank == CardRank.eight,
-      ),
-      _takeCard(
-        deck,
-        (c) => c.rank == CardRank.three,
-      ),
-    ];
+      final hole = [
+        deck.removeLast(),
+        deck.removeLast(),
+      ];
 
-    final board = [
-      _takeCard(
-        deck,
-        (c) => c.rank == CardRank.king,
-      ),
-      _takeCard(
-        deck,
-        (c) => c.rank == CardRank.jack,
-      ),
-      _takeCard(
-        deck,
-        (c) => c.rank == CardRank.four,
-      ),
-    ];
+      final board = [
+        deck.removeLast(),
+        deck.removeLast(),
+        deck.removeLast(),
+      ];
 
-    if (boardCount == 4) {
-      board.add(
-        _takeCard(
-          deck,
-          (c) => c.rank == CardRank.two,
-        ),
+      if (boardCount == 4) {
+        board.add(deck.removeLast());
+      }
+
+      final analysis = OutsEvaluator.evaluate(
+        hole: hole,
+        board: board,
       );
+
+      if (analysis.totalOuts == 0 &&
+          !analysis.isDominantMadeHand &&
+          analysis.description ==
+              'Carta alta senza progetto riconosciuto') {
+        return (hole, board);
+      }
     }
 
-    return (hole, board);
+    throw StateError(
+      'Impossibile generare una mano spazzatura valida.',
+    );
   }
-
+  
   // NUOVO: doppia coppia personale.
   (List<Card>, List<Card>) _buildTwoPair(
     int boardCount,
