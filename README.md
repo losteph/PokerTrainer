@@ -1,28 +1,84 @@
-# ♠️ Poker Trainer (PWA)
+# ♠️ Poker Trainer
 
-Un'applicazione Flutter progettata per allenare le decisioni preflop e il calcolo matematico postflop (Equity, Outs e Pot Odds) nel Texas Hold'em. Si basa sui miei range preferiti di gioco e condizioni limite (stile simile al GTO-TAG).
+<p align="center">
+  <img src="poker.svg" width="150" alt="Poker Trainer">
+</p>
 
-## 🚀 Funzionalità Principali
+<h1 align="center">Poker Trainer</h1>
 
-### 1. Preflop Opening Trainer
-* **Mani casuali dinamiche:** Generazione procedurale di combinazioni preflop.
-* **Range dinamici per posizione:** Supporto completo da 2 a 10 giocatori con compressione delle posizioni (Early, Middle, Late, Blinds).
-* **Filtri di allenamento:** Possibilità di isolare specifici range o posizioni, oppure testare scenari 100% casuali.
-* **Didattica avanzata:** Note contestuali sulle coppie basse per il set mining in Middle Position e gestione dello stack effettivo.
+<p align="center">
+  Allenati nel Texas Hold'em: Opening Range, Outs, Equity e Pot Odds.
+</p>
 
-### 2. Odds & Equity Trainer
-* **Regola del 4 e del 2:** Passaggio rapido tra Flop (2 carte da vedere) e Turn (1 carta da vedere).
-* **Simulazione:** Calibrazione del piatto e delle puntate su un bankroll tipico da 2.000$ fiches. Gestione dello stack personale.
-* **Calcolo mentale privo di spoiler:** Visualizzazione dei valori numerici grezzi a schermo per allenare la conversione mentale Pot $\to$ Equity richiesta.
-* **Riconoscimento Wet/Dry Board:** Distinzione automatica tra mani chiuse dominanti (Made Hand) e progetti puri da inseguire (Draws).
-* **Guida rapida integrata:** Tabella puntate/equity, sconto per tavoli multiway, gestione degli out sporchi, gerarchia completa dei punti e gestione degli stack in Big Blind (BB).
+## 📱 Screenshot
 
----
+<p align="center">
+  <img src="opening-range.png" width="220" alt="Opening Range">
+  <img src="outs-trainer.png" width="220" alt="Outs Trainer">
+</p>
 
-## 📲 Installazione su Dispositivo (PWA)
+## 🎯 Il progetto
 
-L'applicazione è fruibile direttamente da browser senza passare dagli store:
+Poker Trainer è un'applicazione realizzata con Flutter per imparare e migliorare le decisioni nel Texas Hold'em.
 
-* **Android (Chrome):** Premi i tre puntini in alto a destra $\to$ **"Aggiungi a schermata Home"** o **"Installa app"**.
-* **iOS (Safari):** Premi l'icona di condivisione in basso $\to$ **"Aggiungi alla schermata Home"**.
-* **PC / Mac (Chrome / Edge):** Clicca sull'icona di installazione nella barra degli indirizzi in alto a destra.
+È pensata per giocatori principianti e intermedi che vogliono comprendere meglio le decisioni preflop e postflop attraverso esercizi casuali, calcoli matematici e situazioni di gioco.
+
+L'obiettivo è sviluppare un metodo di ragionamento applicabile anche alle partite reali, senza richiedere conoscenze da giocatore professionista.
+
+## 🃏 Funzionalità principali
+
+### 1. Preflop Opening Range Trainer
+
+- Generazione casuale delle mani iniziali.
+- Valutazione delle decisioni in base alla posizione.
+- Range personalizzati per differenti configurazioni del tavolo.
+- Allenamento con scenari e situazioni differenti.
+- Spiegazioni contestuali per comprendere le decisioni.
+
+### 2. Outs & Equity Trainer
+
+- Esercizi casuali con flop e turn.
+- Riconoscimento di Flush Draw, Straight Draw, Gutshot, OESD e Combo Draw.
+- Conteggio degli outs.
+- Distinzione tra outs puliti e sporchi.
+- Applicazione della regola del 4 e del 2.
+- Riconoscimento delle mani già formate e dei board pericolosi.
+
+### 3. Pot Odds Trainer
+
+- Simulazione di differenti dimensioni del piatto e puntate.
+- Calcolo dell'equity richiesta per chiamare.
+- Valutazione delle decisioni Call/Fold.
+- Gestione delle situazioni di All-in.
+- Esercizi basati su stack e dimensioni delle puntate.
+
+## 📊 Come funzionano i calcoli
+
+Il trainer utilizza formule e approssimazioni pensate per facilitare l'apprendimento.
+
+**Regola del 4 e del 2**
+- Flop: numero di outs × 4 per stimare la probabilità di migliorare entro il river.
+- Turn: numero di outs × 2 per stimare la probabilità di migliorare al river.
+
+**Pot Odds**
+
+L'equity richiesta per chiamare viene calcolata confrontando la somma da aggiungere con il piatto finale.
+
+**All-in**
+
+La soglia dipende dalle pot odds effettive e non da una percentuale fissa.
+
+Nei tornei, il rischio di eliminazione e il valore dei premi possono richiedere valutazioni ulteriori, come l'ICM, non calcolato dall'app.
+
+**Nota didattica:** le stime degli outs e dell'equity sono strumenti di allenamento, non calcoli esatti contro un range avversario. La qualità della decisione reale dipende anche dalle mani possibili dell'avversario e dal suo stile di gioco.
+
+## 📲 Installazione
+
+### PWA – Android
+Apri l'app con Chrome e seleziona "Installa app" oppure "Aggiungi a schermata Home".
+
+### PWA – iOS
+Apri l'app con Safari, premi Condividi e seleziona "Aggiungi alla schermata Home".
+
+### PWA – PC
+Apri l'app con Chrome o Edge e utilizza l'icona di installazione nella barra degli indirizzi, se disponibile.
