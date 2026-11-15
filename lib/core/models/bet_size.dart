@@ -10,7 +10,7 @@ enum BetSizeCategory {
   twoPot('2x Pot', 2.0, 40.0),
   threePot('3x Pot', 3.0, 43.0),
   fourPot('4x Pot', 4.0, 45.0),
-  fivePot('5x Pot', 5.0, 49.0),
+  fivePot('5x Pot', 5.0, 46.0),
   allIn('All-in', 6.0, 51.0);
 
   final String label;

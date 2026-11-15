@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Sagoma squircle esterna (sfondo bianco esterno rimosso) -->
+    <clipPath id="squircle-clip">
+      <path d="M 256,0 C 448,0 512,64 512,256 C 512,448 448,512 256,512 C 64,512 0,448 0,256 C 0,64 64,0 256,0 Z" />
+    </clipPath>
+
+    <!-- Gradiente sfondo scuro -->
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2c2d30" />
+      <stop offset="55%" stop-color="#191a1c" />
+      <stop offset="100%" stop-color="#0b0b0c" />
+    </linearGradient>
+
+    <!-- Riflesso diagonale sfondo -->
+    <linearGradient id="gloss-grad" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Sfumatura carta bianca -->
+    <linearGradient id="card-sheen" x1="-66" y1="-102" x2="66" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="70%" stop-color="#f6f6f8" />
+      <stop offset="100%" stop-color="#e8e8ec" />
+    </linearGradient>
+  </defs>
+
+  <!-- CONTENITORE PRINCIPALE RITAGLIATO -->
+  <g id="Layer_Icona" clip-path="url(#squircle-clip)">
+    
+    <!-- 1. SFONDO -->
+    <g id="Sfondo">
+      <rect x="0" y="0" width="512" height="512" fill="url(#bg-grad)" />
+      <polygon points="0,0 512,0 0,460" fill="url(#gloss-grad)" />
+    </g>
+
+    <!-- 2. CERCHI E NODI GEOMETRICI -->
+    <g id="Geometria_Sfondo">
+      <circle cx="256" cy="256" r="214" fill="none" stroke="#46484d" stroke-width="3.2" stroke-opacity="0.65" />
+      <circle cx="256" cy="256" r="168" fill="none" stroke="#46484d" stroke-width="3.2" stroke-opacity="0.65" />
+      
+      <circle cx="105" cy="105" r="15" fill="#232427" stroke="#46484d" stroke-width="3.2" stroke-opacity="0.75" />
+      <rect x="394" y="92" width="26" height="26" fill="#202124" stroke="#46484d" stroke-width="3.2" stroke-opacity="0.75" />
+      <circle cx="105" cy="407" r="15" fill="#18191b" stroke="#46484d" stroke-width="3.2" stroke-opacity="0.75" />
+      <circle cx="407" cy="407" r="15" fill="#121315" stroke="#46484d" stroke-width="3.2" stroke-opacity="0.75" />
+    </g>
+
+    <!-- 3. CARTA 1: PICCHE (ODDS) -->
+    <g id="Carta_Picche" transform="translate(148, 286) rotate(-28)">
+      <!-- Ombra vettoriale pure SVG (100% compatibile Inkscape) -->
+      <rect x="-71" y="-95" width="134" height="206" rx="15" ry="15" fill="#000000" fill-opacity="0.45" />
+      <!-- Corpo carta -->
+      <rect x="-66" y="-102" width="132" height="204" rx="14" ry="14" fill="url(#card-sheen)" stroke="#141416" stroke-width="4" />
+      <!-- Testi -->
+      <text x="-53" y="-76" font-family="sans-serif" font-weight="bold" font-size="14" fill="#18181b">ODDS</text>
+      <text x="53" y="-75" font-family="sans-serif" font-weight="bold" font-size="16" fill="#18181b" text-anchor="end">%</text>
+      <text x="-53" y="88" font-family="sans-serif" font-weight="bold" font-size="16" fill="#18181b">%</text>
+      <!-- Seme Picche -->
+      <g transform="translate(0, 4)">
+        <path d="M 0,-42 C -16,-20 -36,-6 -36,12 C -36,24 -25,31 -14,31 C -8,31 -4,28 -2,24 C -3,34 -7,41 -13,46 L 13,46 C 7,41 3,34 2,24 C 4,28 8,31 14,31 C 25,31 36,24 36,12 C 36,-6 16,-20 0,-42 Z" fill="#1d1d20" />
+        <path d="M 0,-42 C 16,-20 36,-6 36,12 C 36,24 25,31 14,31 C 8,31 4,28 2,24 C 3,34 7,41 13,46 L 0,46 Z" fill="#111113" />
+      </g>
+    </g>
+
+    <!-- 4. CARTA 2: CUORI (EQUITY) -->
+    <g id="Carta_Cuori" transform="translate(204, 232) rotate(-13)">
+      <!-- Ombra vettoriale -->
+      <rect x="-72" y="-95" width="134" height="206" rx="15" ry="15" fill="#000000" fill-opacity="0.45" />
+      <!-- Corpo carta -->
+      <rect x="-66" y="-102" width="132" height="204" rx="14" ry="14" fill="url(#card-sheen)" stroke="#141416" stroke-width="4" />
+      <!-- Testi -->
+      <text x="-53" y="-76" font-family="sans-serif" font-weight="bold" font-size="14" fill="#cc1d24">EQUITY</text>
+      <text x="53" y="-75" font-family="sans-serif" font-weight="bold" font-size="16" fill="#cc1d24" text-anchor="end">%</text>
+      <text x="-53" y="88" font-family="sans-serif" font-weight="bold" font-size="16" fill="#cc1d24">%</text>
+      <!-- Seme Cuori -->
+      <g transform="translate(0, 2)">
+        <path d="M 0,36 C -14,22 -36,4 -36,-16 C -36,-29 -26,-38 -15,-38 C -7,-38 -2,-33 0,-27 C 2,-33 7,-38 15,-38 C 26,-38 36,-29 36,-16 C 36,4 14,22 0,36 Z" fill="#d9232a" />
+        <path d="M 0,36 C 14,22 36,4 36,-16 C 36,-29 26,-38 15,-38 C 7,-38 2,-33 0,-27 Z" fill="#b0161c" />
+      </g>
+    </g>
+
+    <!-- 5. CARTA 3: QUADRI (OPENING RANGE) -->
+    <g id="Carta_Quadri" transform="translate(302, 232) rotate(12)">
+      <!-- Ombra vettoriale -->
+      <rect x="-72" y="-95" width="134" height="206" rx="15" ry="15" fill="#000000" fill-opacity="0.45" />
+      <!-- Corpo carta -->
+      <rect x="-66" y="-102" width="132" height="204" rx="14" ry="14" fill="url(#card-sheen)" stroke="#141416" stroke-width="4" />
+      <!-- Testi -->
+      <text x="-53" y="-76" font-family="sans-serif" font-weight="bold" font-size="14" fill="#cc1d24">OPENING</text>
+      <text x="-53" y="88" font-family="sans-serif" font-weight="bold" font-size="14" fill="#cc1d24">RANGE</text>
+      <!-- Seme Quadri -->
+      <g transform="translate(0, 2)">
+        <polygon points="0,-40 -31,0 0,40 31,0" fill="#d9232a" />
+        <polygon points="0,-40 31,0 0,40" fill="#b0161c" />
+      </g>
+    </g>
+
+    <!-- 6. CARTA 4: FIORI (TRAIN ±EV) -->
+    <g id="Carta_Fiori" transform="translate(384, 286) rotate(29)">
+      <!-- Ombra vettoriale -->
+      <rect x="-72" y="-95" width="134" height="206" rx="15" ry="15" fill="#000000" fill-opacity="0.45" />
+      <!-- Corpo carta -->
+      <rect x="-66" y="-102" width="132" height="204" rx="14" ry="14" fill="url(#card-sheen)" stroke="#141416" stroke-width="4" />
+      <!-- Testi superiori -->
+      <text x="-53" y="-76" font-family="sans-serif" font-weight="bold" font-size="14" fill="#18181b">TRAIN</text>
+      <text x="53" y="-75" font-family="sans-serif" font-weight="bold" font-size="14" fill="#18181b" text-anchor="end">±EV</text>
+      <!-- Testi inferiori capovolti -->
+      <g transform="rotate(180)">
+        <text x="-53" y="-76" font-family="sans-serif" font-weight="bold" font-size="14" fill="#18181b">TRAIN</text>
+        <text x="53" y="-75" font-family="sans-serif" font-weight="bold" font-size="14" fill="#18181b" text-anchor="end">±EV</text>
+      </g>
+      <!-- Seme Fiori -->
+      <g transform="translate(0, 3)">
+        <circle cx="0" cy="-19" r="16.5" fill="#1d1d20" />
+        <circle cx="-18" cy="7" r="16.5" fill="#1d1d20" />
+        <circle cx="18" cy="7" r="16.5" fill="#1d1d20" />
+        <polygon points="0,-8 -12,12 12,12" fill="#1d1d20" />
+        <path d="M -3,8 C -4,24 -8,34 -14,41 L 14,41 C 8,34 4,24 3,8 Z" fill="#1d1d20" />
+        <!-- Ombreggiatura metà destra -->
+        <path d="M 0,-35.5 A 16.5,16.5 0 0,1 10.5,-6.2 A 16.5,16.5 0 1,1 3,22 C 4,30 8,36 14,41 L 0,41 Z" fill="#111113" />
+      </g>
+    </g>
+
+  </g>
+</svg>

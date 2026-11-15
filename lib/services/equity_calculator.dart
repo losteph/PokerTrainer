@@ -19,7 +19,7 @@ class EquityService {
     BetEquityRule('2 * Pot (200%)', 40.0),
     BetEquityRule('3 * Pot', 43.0),
     BetEquityRule('4 * Pot', 45.0),
-    BetEquityRule('5 * Pot', 49.0),
+    BetEquityRule('5 * Pot', 46.0),
     BetEquityRule('All-In', 51.0),
   ];
 
