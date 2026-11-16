@@ -13,8 +13,8 @@
 ## 📱 Screenshot
 
 <p align="center">
-  <img src="opening-range.png" width="220" alt="Opening Range">
-  <img src="outs-trainer.png" width="220" alt="Outs Trainer">
+  <img src="opening-range.jpeg" width="220" alt="Opening Range">
+  <img src="outs-trainer.jpeg" width="220" alt="Outs Trainer">
 </p>
 
 ## 🎯 Il progetto
@@ -72,13 +72,6 @@ Nei tornei, il rischio di eliminazione e il valore dei premi possono richiedere 
 
 **Nota didattica:** le stime degli outs e dell'equity sono strumenti di allenamento, non calcoli esatti contro un range avversario. La qualità della decisione reale dipende anche dalle mani possibili dell'avversario e dal suo stile di gioco.
 
-## 📲 Installazione
+---
 
-### PWA – Android
-Apri l'app con Chrome e seleziona "Installa app" oppure "Aggiungi a schermata Home".
-
-### PWA – iOS
-Apri l'app con Safari, premi Condividi e seleziona "Aggiungi alla schermata Home".
-
-### PWA – PC
-Apri l'app con Chrome o Edge e utilizza l'icona di installazione nella barra degli indirizzi, se disponibile.
+Simulazione banale ed approssimativa, per capire il ragionamento per chi è alle prime armi. Molti Bug non fixati, ma progetto archiviato e considerato chiuso per ora.
